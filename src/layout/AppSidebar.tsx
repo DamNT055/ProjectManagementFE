@@ -28,6 +28,11 @@ type NavItem = {
 };
 
 const navItems: NavItem[] = [
+    {
+    name: "Project",
+    icon: <CheckIcon/>,
+    path: "/project"
+  },
   {
     icon: <GridIcon />,
     name: "Dashboard",
@@ -62,11 +67,7 @@ const navItems: NavItem[] = [
       { name: "404 Error", path: "/error-404", pro: false },
     ],
   },
-  {
-    name: "Project",
-    icon: <CheckIcon/>,
-    path: "/project"
-  }
+
 ];
 
 const othersItems: NavItem[] = [

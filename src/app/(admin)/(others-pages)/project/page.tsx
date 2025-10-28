@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Star, Clock, ArrowRight, Smile, Flag, Phone, MoreVertical, User, Plus } from "lucide-react"
 import Image from "next/image"
 
@@ -8,13 +8,67 @@ import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 import { CreateProjectModal } from "@/components/project/CreateProjectModal";
+import { gql } from "@apollo/client";
+import { useQuery } from "@apollo/client/react";
+
+const GET_ALL_PROJECTS = gql`
+    query GetAllProjects {
+        projects {
+            id
+            name
+            description
+            related_person
+            status
+            time_spent
+            time_remain
+            tags
+            created_at
+            updated_at
+        }
+    }
+`;
+
+export interface Project {
+  id: number;
+  name: string;
+  description?: string | null;
+  related_person: string;
+  status: string;
+  time_spent: number;
+  time_remain: number;
+  tags?: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export async function fetchAllProjects(): Promise<Project[]> {
+    // kept for compatibility but prefer Apollo useQuery in the component
+    const res = await fetch('/api/graphql', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ query: GET_ALL_PROJECTS.loc?.source.body ?? '' }),
+    });
+
+    const json = await res.json();
+    const data = json.data;
+    const errors = json.errors as Array<{ message?: string }>|undefined;
+    if (errors && errors.length) throw new Error(errors.map((e) => e.message || 'Unknown error').join(', '));
+    return data.projects as Project[];
+}
 
 export default function Project() {
     const [showCreate, setShowCreate] = useState(false);
 
-    useEffect(() => {
-        console.log(showCreate)
-    })
+    type GetAllProjectsData = { projects: Project[] };
+    const { data, loading, error } = useQuery<GetAllProjectsData>(GET_ALL_PROJECTS, {
+      // fetchPolicy can be adjusted as needed
+      fetchPolicy: 'cache-first',
+    });
+
+    const projects: Project[] = data?.projects ?? [];
+
+    const formatDate = (iso?: string) =>
+        iso ? new Date(iso).toLocaleDateString("en-US", { month: "short", day: "numeric" }) : "";
 
     return (
         <>
@@ -26,24 +80,35 @@ export default function Project() {
             </div>
 
             <div className="p-6 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                
-                <KanbanCard
-                    title="AGR - S00066 - Sales Order"
-                    partner="Deco Addict"
-                    dateStart="Oct 6"
-                    dateEnd="Dec 1"
-                    rating={5}
-                    tasks={11}
-                    milestones={{ done: 1, total: 3 }}
-                    remaining="-200:00"
-                    avatarUrl="/images/user/user-23.jpg"
-                    isFavorite
-                />
+                {loading && <div className="col-span-full text-slate-400">Loading projects…</div>}
+
+                {error && <div className="col-span-full text-red-400">Error: {String(error)}</div>}
+
+                {!loading && !error && projects?.length === 0 && (
+                    <div className="col-span-full text-slate-400">No projects found.</div>
+                )}
+
+                {!loading &&
+                    !error &&
+                    projects.map((p: Project) => (
+                        <KanbanCard
+                            key={p.id}
+                            title={p.name}
+                            partner={p.related_person}
+                            dateStart={formatDate(p.created_at)}
+                            dateEnd={formatDate(p.updated_at)}
+                            rating={0} // backend doesn't provide rating; adjust if available
+                            tasks={0} // adjust when you have task count
+                            milestones={{ done: 0, total: 0 }} // adjust when you have milestone data
+                            remaining={`${p.time_remain}`}
+                            avatarUrl="/images/user/user-23.jpg"
+                        />
+                    ))}
             </div>
 
-+            <CreateProjectModal open={showCreate} onClose={() => setShowCreate(false)} />
+            <CreateProjectModal open={showCreate} onClose={() => setShowCreate(false)} />
         </>
-    )
+    );
 }
 
 export interface KanbanCardProps {
