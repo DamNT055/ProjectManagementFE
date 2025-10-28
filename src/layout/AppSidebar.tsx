@@ -18,6 +18,7 @@ import {
   UserCircleIcon,
 } from "../icons/index";
 import SidebarWidget from "./SidebarWidget";
+import {CheckIcon} from "@/components/ui/icons/heroicons-check"
 
 type NavItem = {
   name: string;
@@ -61,6 +62,11 @@ const navItems: NavItem[] = [
       { name: "404 Error", path: "/error-404", pro: false },
     ],
   },
+  {
+    name: "Project",
+    icon: <CheckIcon/>,
+    path: "/project"
+  }
 ];
 
 const othersItems: NavItem[] = [
